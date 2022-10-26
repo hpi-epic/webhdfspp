@@ -50,11 +50,11 @@ Status IoServiceImpl::DoNNRequest(const URIBuilder &uri,
   }
 
   if (!options_.header.empty()) {
-      struct curl_slist *list;
+      struct curl_slist *headers = NULL;
       for (const auto& header : options_.header) {
-          list = curl_slist_append(list, header.c_str());
+          headers = curl_slist_append(headers, header.c_str());
       }
-      curl_easy_setopt(handle, CURLOPT_HTTPHEADER, list);
+      curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
   }
 
   curl_easy_setopt(handle, CURLOPT_URL, uri_str.c_str());
