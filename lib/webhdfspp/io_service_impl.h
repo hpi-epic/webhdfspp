@@ -29,7 +29,7 @@ namespace webhdfspp {
 class IoServiceImpl : public IoService,
                       public std::enable_shared_from_this<IoServiceImpl> {
 public:
-  IoServiceImpl();
+  IoServiceImpl(const Options &options);
   ~IoServiceImpl();
   virtual Status Run() override;
   virtual void Stop() override;
@@ -46,6 +46,8 @@ private:
   static CURLcode
   DNGetCallback(char *in, size_t size, size_t nmemb,
                 std::function<size_t(const char *, size_t)> *on_data_arrived);
+
+  const Options options_;
 };
 } // namespace webhdfspp
 

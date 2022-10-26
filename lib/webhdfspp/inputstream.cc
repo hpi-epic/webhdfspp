@@ -22,18 +22,19 @@ namespace webhdfspp {
 
 InputStream::~InputStream() {}
 
-InputStreamImpl::InputStreamImpl(const std::pair<std::string, short> &nn,
+InputStreamImpl::InputStreamImpl(const Options &options,
                                  const std::string &path,
-                                 std::shared_ptr<IoServiceImpl> io_service)
-    : nn_(nn), path_(path), io_service_(io_service) {}
+                                 std::shared_ptr<IoServiceImpl> io_service, int active_endpoint)
+    : options_(options), path_(path), io_service_(io_service), active_endpoint_(active_endpoint) {}
 
 Status InputStreamImpl::PositionRead(
     size_t max_read_bytes, size_t offset,
     const std::function<size_t(const char *, size_t)> &on_data_arrived) {
+    const auto nn = options_.namenodes[active_endpoint_];
   URIBuilder builder;
-  auto uri = builder.Scheme("http")
-                 .Host(nn_.first)
-                 .Port(nn_.second)
+  auto uri = builder.Scheme(options_.scheme)
+                 .Host(nn.first)
+                 .Port(nn.second)
                  .Path("/webhdfs/v1" + path_)
                  .Param("op", "OPEN");
 

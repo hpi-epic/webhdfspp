@@ -25,17 +25,18 @@ namespace webhdfspp {
 
 class InputStreamImpl : public InputStream {
 public:
-  InputStreamImpl(const std::pair<std::string, short> &nn,
+  InputStreamImpl(const Options &options,
                   const std::string &path,
-                  std::shared_ptr<IoServiceImpl> io_service);
+                  std::shared_ptr<IoServiceImpl> io_service, int active_endpoint);
   virtual Status PositionRead(size_t max_read_bytes, size_t offset,
                               const std::function<size_t(const char *, size_t)>
                                   &on_data_arrived) override;
 
 private:
-  std::pair<std::string, short> nn_;
+  const Options options_;
   std::string path_;
   std::shared_ptr<IoServiceImpl> io_service_;
+  int active_endpoint_;
 };
 
 } // namespace webhdfspp

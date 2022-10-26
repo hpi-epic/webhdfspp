@@ -23,11 +23,11 @@
 
 namespace webhdfspp {
 
-IoServiceImpl::IoServiceImpl() {}
+IoServiceImpl::IoServiceImpl(const Options &options) : options_(options) {}
 
 IoServiceImpl::~IoServiceImpl() {}
 
-IoService *IoService::New() { return new IoServiceImpl(); }
+IoService *IoService::New(const Options &options) { return new IoServiceImpl(options); }
 
 IoService::~IoService() {}
 
@@ -43,6 +43,11 @@ Status IoServiceImpl::DoNNRequest(const URIBuilder &uri,
   std::vector<char> content;
   char error_buffer[CURL_ERROR_SIZE];
   auto uri_str = uri.Build();
+
+  if (options_.ssl_cert && options_.ssl_key) {
+      curl_easy_setopt(handle, CURLOPT_SSLCERT, options_.ssl_cert);
+      curl_easy_setopt(handle, CURLOPT_SSLKEY, options_.ssl_key);
+  }
 
   curl_easy_setopt(handle, CURLOPT_URL, uri_str.c_str());
   curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, error_buffer);

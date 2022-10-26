@@ -21,6 +21,7 @@
 #include "status.h"
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -34,9 +35,16 @@ protected:
   void operator=(non_copyable const &) = delete;
 };
 
+struct Options {
+    std::vector<std::pair<std::string, short>> namenodes;
+    char* ssl_cert;
+    char* ssl_key;
+    std::string scheme;
+};
+
 class IoService : non_copyable {
 public:
-  static IoService *New();
+  static IoService *New(const Options &options);
   virtual Status Run() = 0;
   virtual void Stop() = 0;
   virtual ~IoService();
@@ -44,10 +52,6 @@ public:
 
 class InputStream;
 class OutputStream;
-
-struct Options {
-  std::vector<std::pair<std::string, short>> namenodes;
-};
 
 struct FileStatus {
   enum FileType {

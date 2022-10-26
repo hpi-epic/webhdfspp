@@ -1,3 +1,8 @@
+# Build directories of CLion.
+cmake-build-*
+
+.idea
+
 # Prerequisites
 *.d
 

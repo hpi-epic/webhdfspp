@@ -66,8 +66,10 @@ WebHdfsFileSystem::WebHdfsFileSystem(const Options &options,
 
 Status WebHdfsFileSystem::Delete(const std::string &path, bool recursive) {
   const auto &nn = options_.namenodes[active_endpoint_];
-  URIBuilder builder;
-  auto uri = builder.Scheme("http")
+  const auto &scheme = options_.scheme;
+
+    URIBuilder builder;
+  auto uri = builder.Scheme(scheme)
                  .Host(nn.first)
                  .Port(nn.second)
                  .Path("/webhdfs/v1" + path)
@@ -88,8 +90,10 @@ Status WebHdfsFileSystem::Delete(const std::string &path, bool recursive) {
 Status WebHdfsFileSystem::GetFileStatus(const std::string &path,
                                         FileStatus *stat) {
   const auto &nn = options_.namenodes[active_endpoint_];
-  URIBuilder builder;
-  auto uri = builder.Scheme("http")
+  const auto &scheme = options_.scheme;
+
+    URIBuilder builder;
+  auto uri = builder.Scheme(scheme)
                  .Host(nn.first)
                  .Port(nn.second)
                  .Path("/webhdfs/v1" + path)
@@ -142,8 +146,7 @@ Status WebHdfsFileSystem::Exists(const std::string &path, bool *result) {
 
 Status WebHdfsFileSystem::Open(const std::string &path,
                                std::unique_ptr<InputStream> *is) {
-  const auto &nn = options_.namenodes[active_endpoint_];
-  auto is_ptr = new InputStreamImpl(nn, path, io_service_);
+  auto is_ptr = new InputStreamImpl(options_, path, io_service_, active_endpoint_);
   is->reset(is_ptr);
   return Status::OK();
 }
