@@ -43,10 +43,16 @@ public:
     return Status::OK();
   };
 
+  Status List(const std::string &path, std::shared_ptr<FileStatuses> file_statuses) override;
+
 private:
   Options options_;
   std::shared_ptr<IoServiceImpl> io_service_;
   int active_endpoint_;
+
+    void
+    FillFileStatus(FileStatus *stat,
+                   const rapidjson::GenericValue<rapidjson::UTF8<>, rapidjson::MemoryPoolAllocator<>> &s) const;
 };
 
 FileSystem::~FileSystem() {}
@@ -92,7 +98,7 @@ Status WebHdfsFileSystem::GetFileStatus(const std::string &path,
   const auto &nn = options_.namenodes[active_endpoint_];
   const auto &scheme = options_.scheme;
 
-    URIBuilder builder;
+  URIBuilder builder;
   auto uri = builder.Scheme(scheme)
                  .Host(nn.first)
                  .Port(nn.second)
@@ -105,32 +111,37 @@ Status WebHdfsFileSystem::GetFileStatus(const std::string &path,
   }
 
   const auto &s = d["FileStatus"];
-  stat->accessTime = s["accessTime"].GetUint64();
-  stat->blockSize = s["blockSize"].GetUint64();
-  stat->childrenNum = s["childrenNum"].GetUint64();
-  stat->fileId = s["fileId"].GetUint64();
-  stat->group = s["group"].GetString();
-  stat->length = s["length"].GetUint64();
-  stat->modificationTime = s["modificationTime"].GetUint64();
-  stat->owner = s["owner"].GetString();
-  stat->pathSuffix = s["pathSuffix"].GetString();
-  stat->permission = strtoll(s["permission"].GetString(), nullptr, 8);
-  stat->replication = s["replication"].GetInt();
-  stat->storagePolicy = s["storagePolicy"].GetInt();
+    FillFileStatus(stat, s);
 
-  std::string type(s["type"].GetString());
-  if (type == "DIRECTORY") {
-    stat->type = FileStatus::DIRECTORY;
-  } else if (type == "FILE") {
-    stat->type = FileStatus::FILE;
-  } else {
-    stat->type = FileStatus::SYMLINK;
-  }
-
-  return Status::OK();
+    return Status::OK();
 }
 
-Status WebHdfsFileSystem::Exists(const std::string &path, bool *result) {
+void WebHdfsFileSystem::FillFileStatus(FileStatus *stat,
+                                       const rapidjson::GenericValue<rapidjson::UTF8<>> &s) const {
+    stat->accessTime = s["accessTime"].GetUint64();
+    stat->blockSize = s["blockSize"].GetUint64();
+    stat->childrenNum = s["childrenNum"].GetUint64();
+    stat->fileId = s["fileId"].GetUint64();
+    stat->group = s["group"].GetString();
+    stat->length = s["length"].GetUint64();
+    stat->modificationTime = s["modificationTime"].GetUint64();
+    stat->owner = s["owner"].GetString();
+    stat->pathSuffix = s["pathSuffix"].GetString();
+    stat->permission = strtoll(s["permission"].GetString(), nullptr, 8);
+    stat->replication = s["replication"].GetInt();
+    stat->storagePolicy = s["storagePolicy"].GetInt();
+
+    std::string type(s["type"].GetString());
+    if (type == "DIRECTORY") {
+      stat->type = FileStatus::DIRECTORY;
+    } else if (type == "FILE") {
+      stat->type = FileStatus::FILE;
+    } else {
+      stat->type = FileStatus::SYMLINK;
+    }
+}
+
+    Status WebHdfsFileSystem::Exists(const std::string &path, bool *result) {
   FileStatus st;
   auto stat = GetFileStatus(path, &st);
   if (stat.ok()) {
@@ -149,6 +160,37 @@ Status WebHdfsFileSystem::Open(const std::string &path,
   auto is_ptr = new InputStreamImpl(options_, path, io_service_, active_endpoint_);
   is->reset(is_ptr);
   return Status::OK();
+}
+
+Status WebHdfsFileSystem::List(const std::string &path, std::shared_ptr<FileStatuses> statuses) {
+    const auto &nn = options_.namenodes[active_endpoint_];
+    const auto &scheme = options_.scheme;
+
+    URIBuilder builder;
+    auto uri = builder.Scheme(scheme)
+            .Host(nn.first)
+            .Port(nn.second)
+            .Path("/webhdfs/v1" + path)
+            .Param("op", "LISTSTATUS");
+    Document d;
+    Status err = io_service_->DoNNRequest(uri, "GET", &d);
+
+    if (!err.ok()) {
+        return err;
+    }
+
+    const auto &file_statuses = d["FileStatuses"];
+    for (rapidjson::Value::ConstMemberIterator file_statuses_iterator = file_statuses.MemberBegin();
+         file_statuses_iterator != file_statuses.MemberEnd(); ++file_statuses_iterator) {
+      for (rapidjson::Value::ConstValueIterator file_status_iterator = file_statuses_iterator->value.Begin();
+           file_status_iterator != file_statuses_iterator->value.End(); ++file_status_iterator) {
+        FileStatus status;
+        FillFileStatus(&status, *file_status_iterator);
+        statuses->statuses.push_back(status);
+      }
+    }
+
+    return Status::OK();
 }
 
 } // namespace webhdfspp

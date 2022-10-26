@@ -75,6 +75,10 @@ struct FileStatus {
   FileType type;
 };
 
+struct FileStatuses {
+    std::vector<FileStatus> statuses;
+};
+
 class InputStream : non_copyable {
 public:
   static const size_t kUnlimitedReadBytes = -1;
@@ -103,6 +107,8 @@ public:
                       std::unique_ptr<InputStream> *isptr) = 0;
   virtual Status Create(const std::string &path, bool overwrite,
                         OutputStream **osptr) = 0;
+
+  virtual Status List(const std::string &path, std::shared_ptr<FileStatuses> file_statuses) = 0;
 };
 
 } // namespace webhdfspp
