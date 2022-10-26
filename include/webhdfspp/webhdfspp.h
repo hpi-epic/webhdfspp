@@ -37,9 +37,10 @@ protected:
 
 struct Options {
     std::vector<std::pair<std::string, short>> namenodes;
-    char* ssl_cert;
-    char* ssl_key;
+    char* ssl_cert = nullptr;
+    char* ssl_key = nullptr;
     std::string scheme;
+    std::vector<std::string> header;
 };
 
 class IoService : non_copyable {

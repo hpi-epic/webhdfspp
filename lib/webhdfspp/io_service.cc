@@ -49,6 +49,14 @@ Status IoServiceImpl::DoNNRequest(const URIBuilder &uri,
       curl_easy_setopt(handle, CURLOPT_SSLKEY, options_.ssl_key);
   }
 
+  if (!options_.header.empty()) {
+      struct curl_slist *list;
+      for (const auto& header : options_.header) {
+          list = curl_slist_append(list, header.c_str());
+      }
+      curl_easy_setopt(handle, CURLOPT_HTTPHEADER, list);
+  }
+
   curl_easy_setopt(handle, CURLOPT_URL, uri_str.c_str());
   curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, error_buffer);
   curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, method.c_str());
