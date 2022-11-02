@@ -90,7 +90,7 @@ public:
 
 class OutputStream : non_copyable {
 public:
-  virtual Status Append(void *buf, size_t nbyte, size_t written_bytes) = 0;
+  virtual Status WriteFile(const char* data, size_t nbyte, size_t written_bytes) = 0;
   virtual ~OutputStream();
 };
 
@@ -106,7 +106,7 @@ public:
   virtual Status Open(const std::string &path,
                       std::unique_ptr<InputStream> *isptr) = 0;
   virtual Status Create(const std::string &path, bool overwrite,
-                        OutputStream **osptr) = 0;
+                        std::unique_ptr<OutputStream> *output_stream) = 0;
 
   virtual Status List(const std::string &path, std::shared_ptr<FileStatuses> file_statuses) = 0;
 };

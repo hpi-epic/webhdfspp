@@ -40,12 +40,16 @@ public:
   DoDNGet(const URIBuilder &uri,
           const std::function<size_t(const char *, size_t)> &on_data_arrived);
 
+  Status DoPutCreate(const URIBuilder &uri, const char* data, size_t length);
+
 private:
   static CURLcode AppendToBuffer(char *in, size_t size, size_t nmemb,
                                  std::vector<char> *buf);
   static CURLcode
   DNGetCallback(char *in, size_t size, size_t nmemb,
                 std::function<size_t(const char *, size_t)> *on_data_arrived);
+
+  static size_t ReadCallback(char *buffer, size_t size, size_t nmemb, void *userdata);
 
   const Options options_;
 };

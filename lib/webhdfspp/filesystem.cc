@@ -19,7 +19,9 @@
 #include "inputstream_impl.h"
 #include "io_service_impl.h"
 #include "uri_builder.h"
+#include "outputstream_impl.h"
 
+#include <memory>
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
 
@@ -39,9 +41,8 @@ public:
   virtual Status Exists(const std::string &path, bool *result) override;
   virtual Status Open(const std::string &path,
                       std::unique_ptr<InputStream> *is) override;
-  virtual Status Create(const std::string &, bool, OutputStream **) override {
-    return Status::OK();
-  };
+  Status Create(const std::string &path, bool overwrite,
+                std::unique_ptr<OutputStream> *output_stream) override;
 
   Status List(const std::string &path, std::shared_ptr<FileStatuses> file_statuses) override;
 
@@ -190,6 +191,12 @@ Status WebHdfsFileSystem::List(const std::string &path, std::shared_ptr<FileStat
       }
     }
 
+    return Status::OK();
+}
+
+Status WebHdfsFileSystem::Create(const std::string &path, bool overwrite,
+                                 std::unique_ptr<OutputStream>* output_stream) {
+    output_stream->reset(new OutputStreamImpl(options_, path, io_service_, active_endpoint_, overwrite));
     return Status::OK();
 }
 

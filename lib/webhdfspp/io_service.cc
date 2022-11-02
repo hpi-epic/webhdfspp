@@ -16,10 +16,14 @@
  * limitations under the License.
  */
 
-#include "io_service_impl.h"
-
+#include <algorithm>
 #include <atomic>
+#include <iostream>
 #include <sstream>
+
+#include <malloc.h>
+
+#include "io_service_impl.h"
 
 namespace webhdfspp {
 
@@ -50,7 +54,7 @@ Status IoServiceImpl::DoNNRequest(const URIBuilder &uri,
   }
 
   if (!options_.header.empty()) {
-      struct curl_slist *headers = NULL;
+      struct curl_slist *headers = nullptr;
       for (const auto& header : options_.header) {
           headers = curl_slist_append(headers, header.c_str());
       }
@@ -115,6 +119,69 @@ CURLcode IoServiceImpl::DNGetCallback(
     std::function<size_t(const char *, size_t)> *on_data_arrived) {
   size_t consumed = (*on_data_arrived)(in, size * nmemb);
   return (CURLcode)consumed;
+}
+
+struct DataUpload {
+  const char *read_pointer;
+  size_t size_left;
+};
+
+size_t IoServiceImpl::ReadCallback(char *buffer, size_t size, size_t nmemb, void *userdata) {
+  struct DataUpload*upload = (struct DataUpload*)userdata;
+  size_t max_offset = size*nmemb;
+
+  if(max_offset < 1)
+    return 0;
+
+  if(upload->size_left) {
+    size_t copylen = max_offset;
+    if(copylen > upload->size_left) {
+      copylen = upload->size_left;
+    }
+
+    memcpy(buffer, upload->read_pointer, copylen);
+    upload->read_pointer += copylen;
+    upload->size_left -= copylen;
+    return copylen;
+  }
+  return 0;
+}
+
+Status IoServiceImpl::DoPutCreate(const URIBuilder &uri, const char* data, size_t length) {
+  CURL* handle = curl_easy_init();
+  char error_buffer[CURL_ERROR_SIZE];
+  auto uri_str = uri.Build();
+
+  curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "PUT");
+  curl_easy_setopt(handle, CURLOPT_URL, uri_str.c_str());
+  curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, error_buffer);
+  auto error_handle = curl_easy_perform(handle);
+
+  char* location = nullptr;
+  curl_easy_getinfo(handle, CURLINFO_REDIRECT_URL, &location);
+  std::string s = location;
+  curl_easy_cleanup(handle);
+
+  struct DataUpload data_upload;
+  data_upload.read_pointer = data;
+  data_upload.size_left = strlen(data);
+
+  CURL* redirect_handle = curl_easy_init();
+  char error_buffer_redirect[CURL_ERROR_SIZE];
+  curl_easy_setopt(redirect_handle, CURLOPT_URL, s.c_str());
+  curl_easy_setopt(redirect_handle, CURLOPT_UPLOAD, 1L);
+  curl_easy_setopt(redirect_handle, CURLOPT_READFUNCTION, ReadCallback);
+  curl_easy_setopt(redirect_handle, CURLOPT_READDATA, &data_upload);
+  curl_easy_setopt(redirect_handle, CURLOPT_INFILESIZE_LARGE, (curl_off_t)length);
+  curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, error_buffer_redirect);
+  auto error_redirect = curl_easy_perform(redirect_handle);
+  curl_easy_cleanup(redirect_handle);
+
+  if (error_handle || error_redirect) {
+    return error_handle ? Status::Error(error_buffer) : Status::Error(error_buffer_redirect);
+  }
+
+  return Status::OK();
 }
 
 } // namespace webhdfspp
