@@ -51,6 +51,10 @@ private:
 
   static size_t ReadCallback(char *buffer, size_t size, size_t nmemb, void *userdata);
 
+  void SetAuthentication(void *handle) const;
+
+  void AddCustomHeader(void *handle) const;
+
   const Options options_;
 };
 } // namespace webhdfspp

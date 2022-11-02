@@ -48,18 +48,8 @@ Status IoServiceImpl::DoNNRequest(const URIBuilder &uri,
   char error_buffer[CURL_ERROR_SIZE];
   auto uri_str = uri.Build();
 
-  if (options_.ssl_cert && options_.ssl_key) {
-      curl_easy_setopt(handle, CURLOPT_SSLCERT, options_.ssl_cert);
-      curl_easy_setopt(handle, CURLOPT_SSLKEY, options_.ssl_key);
-  }
-
-  if (!options_.header.empty()) {
-      struct curl_slist *headers = nullptr;
-      for (const auto& header : options_.header) {
-          headers = curl_slist_append(headers, header.c_str());
-      }
-      curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
-  }
+  SetAuthentication(handle);
+  AddCustomHeader(handle);
 
   curl_easy_setopt(handle, CURLOPT_URL, uri_str.c_str());
   curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, error_buffer);
@@ -81,6 +71,23 @@ Status IoServiceImpl::DoNNRequest(const URIBuilder &uri,
   }
 
   return Status::OK();
+}
+
+void IoServiceImpl::AddCustomHeader(void *handle) const {
+    if (!options_.header.empty()) {
+      struct curl_slist *headers = nullptr;
+      for (const auto& header : options_.header) {
+          headers = curl_slist_append(headers, header.c_str());
+      }
+      curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
+  }
+}
+
+void IoServiceImpl::SetAuthentication(void *handle) const {
+    if (options_.ssl_cert && options_.ssl_key) {
+        curl_easy_setopt(handle, CURLOPT_SSLCERT, options_.ssl_cert);
+        curl_easy_setopt(handle, CURLOPT_SSLKEY, options_.ssl_key);
+    }
 }
 
 Status IoServiceImpl::DoDNGet(
@@ -152,6 +159,8 @@ Status IoServiceImpl::DoPutCreate(const URIBuilder &uri, const char* data, size_
   char error_buffer[CURL_ERROR_SIZE];
   auto uri_str = uri.Build();
 
+  SetAuthentication(handle);
+  AddCustomHeader(handle);
   curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "PUT");
   curl_easy_setopt(handle, CURLOPT_URL, uri_str.c_str());
   curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, error_buffer);
@@ -168,6 +177,9 @@ Status IoServiceImpl::DoPutCreate(const URIBuilder &uri, const char* data, size_
 
   CURL* redirect_handle = curl_easy_init();
   char error_buffer_redirect[CURL_ERROR_SIZE];
+
+  SetAuthentication(redirect_handle);
+  AddCustomHeader(redirect_handle);
   curl_easy_setopt(redirect_handle, CURLOPT_URL, s.c_str());
   curl_easy_setopt(redirect_handle, CURLOPT_UPLOAD, 1L);
   curl_easy_setopt(redirect_handle, CURLOPT_READFUNCTION, ReadCallback);
