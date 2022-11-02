@@ -98,6 +98,9 @@ Status IoServiceImpl::DoDNGet(
   char error_buffer[CURL_ERROR_SIZE];
   auto uri_str = uri.Build();
 
+  AddCustomHeader(handle);
+  SetAuthentication(handle);
+
   curl_easy_setopt(handle, CURLOPT_URL, uri_str.c_str());
   curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, error_buffer);
   curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "GET");
