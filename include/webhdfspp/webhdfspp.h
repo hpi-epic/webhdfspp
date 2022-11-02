@@ -90,7 +90,7 @@ public:
 
 class OutputStream : non_copyable {
 public:
-  virtual Status WriteFile(const char* data, size_t nbyte, size_t written_bytes) = 0;
+  virtual Status WriteFile(const char* data, size_t nbyte) = 0;
   virtual ~OutputStream();
 };
 

@@ -29,7 +29,7 @@ namespace webhdfspp {
                         std::string path,
                         std::shared_ptr<IoServiceImpl> io_service, int active_endpoint, bool overwrite);
 
-        virtual Status WriteFile(const char* data, size_t nbyte, size_t written_bytes) override;
+        virtual Status WriteFile(const char* data, size_t nbyte) override;
 
        private:
         const Options options_;

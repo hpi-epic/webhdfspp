@@ -11,7 +11,7 @@ OutputStreamImpl::OutputStreamImpl(Options options, std::string path,
                                    : options_(std::move(options)), path_(std::move(path)), io_service_(std::move(io_service)),
                                      active_endpoint_(active_endpoint), overwrite_(overwrite) {}
 
-Status OutputStreamImpl::WriteFile(const char* data, size_t nbyte, size_t /*written_bytes*/) {
+Status OutputStreamImpl::WriteFile(const char* data, size_t nbyte) {
   const auto& nn = options_.namenodes[active_endpoint_];
   const auto& scheme = options_.scheme;
   URIBuilder builder;
