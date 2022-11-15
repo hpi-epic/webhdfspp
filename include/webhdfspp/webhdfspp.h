@@ -35,17 +35,23 @@ protected:
   void operator=(non_copyable const &) = delete;
 };
 
+struct RequestTracker {
+  size_t get_count = 0;
+  size_t put_count = 0;
+};
+
 struct Options {
     std::vector<std::pair<std::string, short>> namenodes;
     char* ssl_cert = nullptr;
     char* ssl_key = nullptr;
     std::string scheme;
     std::vector<std::string> header;
+    RequestTracker request_tracker;
 };
 
 class IoService : non_copyable {
 public:
-  static IoService *New(const Options &options);
+  static IoService *New(std::shared_ptr<Options> options);
   virtual Status Run() = 0;
   virtual void Stop() = 0;
   virtual ~IoService();
@@ -97,7 +103,7 @@ public:
 class FileSystem : non_copyable {
 public:
   virtual ~FileSystem();
-  static Status New(const Options &options,
+  static Status New(std::shared_ptr<Options> options,
                     std::shared_ptr<IoService> io_service, FileSystem **fsptr);
   virtual Status Delete(const std::string &path, bool recursive) = 0;
   virtual Status GetFileStatus(const std::string &path,

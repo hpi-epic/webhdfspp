@@ -29,7 +29,7 @@ namespace webhdfspp {
 class IoServiceImpl : public IoService,
                       public std::enable_shared_from_this<IoServiceImpl> {
 public:
-  IoServiceImpl(const Options &options);
+  IoServiceImpl(std::shared_ptr<Options> options);
   ~IoServiceImpl();
   virtual Status Run() override;
   virtual void Stop() override;
@@ -55,7 +55,7 @@ private:
 
   void AddCustomHeader(void *handle) const;
 
-  const Options options_;
+  std::shared_ptr<Options> options_;
 };
 } // namespace webhdfspp
 

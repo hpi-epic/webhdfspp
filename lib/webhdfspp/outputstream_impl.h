@@ -25,14 +25,14 @@ namespace webhdfspp {
 
     class OutputStreamImpl : public OutputStream {
     public:
-        OutputStreamImpl(Options options,
+        OutputStreamImpl(std::shared_ptr<Options> options,
                         std::string path,
                         std::shared_ptr<IoServiceImpl> io_service, int active_endpoint, bool overwrite);
 
         virtual Status WriteFile(const char* data, size_t nbyte) override;
 
        private:
-        const Options options_;
+        std::shared_ptr<Options> options_;
         std::string path_;
         std::shared_ptr<IoServiceImpl> io_service_;
         int active_endpoint_;

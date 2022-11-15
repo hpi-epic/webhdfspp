@@ -33,7 +33,7 @@ namespace webhdfspp {
 
 class WebHdfsFileSystem : public FileSystem {
 public:
-  WebHdfsFileSystem(const Options &options,
+  WebHdfsFileSystem(std::shared_ptr<Options> options,
                     std::shared_ptr<IoService> io_service);
   virtual Status Delete(const std::string &path, bool recursive) override;
   virtual Status GetFileStatus(const std::string &path,
@@ -47,7 +47,7 @@ public:
   Status List(const std::string &path, std::shared_ptr<FileStatuses> file_statuses) override;
 
 private:
-  Options options_;
+  std::shared_ptr<Options> options_;
   std::shared_ptr<IoServiceImpl> io_service_;
   int active_endpoint_;
 
@@ -58,22 +58,22 @@ private:
 
 FileSystem::~FileSystem() {}
 
-Status FileSystem::New(const Options &options,
+Status FileSystem::New(std::shared_ptr<Options> options,
                        std::shared_ptr<IoService> io_service,
                        FileSystem **fsptr) {
   *fsptr = new WebHdfsFileSystem(options, io_service);
   return Status::OK();
 }
 
-WebHdfsFileSystem::WebHdfsFileSystem(const Options &options,
+WebHdfsFileSystem::WebHdfsFileSystem(std::shared_ptr<Options> options,
                                      std::shared_ptr<IoService> io_service)
     : options_(options),
       io_service_(std::static_pointer_cast<IoServiceImpl>(io_service)),
       active_endpoint_(0) {}
 
 Status WebHdfsFileSystem::Delete(const std::string &path, bool recursive) {
-  const auto &nn = options_.namenodes[active_endpoint_];
-  const auto &scheme = options_.scheme;
+  const auto &nn = options_->namenodes[active_endpoint_];
+  const auto &scheme = options_->scheme;
 
     URIBuilder builder;
   auto uri = builder.Scheme(scheme)
@@ -96,8 +96,8 @@ Status WebHdfsFileSystem::Delete(const std::string &path, bool recursive) {
 
 Status WebHdfsFileSystem::GetFileStatus(const std::string &path,
                                         FileStatus *stat) {
-  const auto &nn = options_.namenodes[active_endpoint_];
-  const auto &scheme = options_.scheme;
+  const auto &nn = options_->namenodes[active_endpoint_];
+  const auto &scheme = options_->scheme;
 
   URIBuilder builder;
   auto uri = builder.Scheme(scheme)
@@ -164,8 +164,8 @@ Status WebHdfsFileSystem::Open(const std::string &path,
 }
 
 Status WebHdfsFileSystem::List(const std::string &path, std::shared_ptr<FileStatuses> statuses) {
-    const auto &nn = options_.namenodes[active_endpoint_];
-    const auto &scheme = options_.scheme;
+    const auto &nn = options_->namenodes[active_endpoint_];
+    const auto &scheme = options_->scheme;
 
     URIBuilder builder;
     auto uri = builder.Scheme(scheme)

@@ -27,11 +27,11 @@
 
 namespace webhdfspp {
 
-IoServiceImpl::IoServiceImpl(const Options &options) : options_(options) {}
+IoServiceImpl::IoServiceImpl(std::shared_ptr<Options> options) : options_(options) {}
 
 IoServiceImpl::~IoServiceImpl() {}
 
-IoService *IoService::New(const Options &options) { return new IoServiceImpl(options); }
+IoService *IoService::New(std::shared_ptr<Options> options) { return new IoServiceImpl(options); }
 
 IoService::~IoService() {}
 
@@ -74,9 +74,9 @@ Status IoServiceImpl::DoNNRequest(const URIBuilder &uri,
 }
 
 void IoServiceImpl::AddCustomHeader(void *handle) const {
-    if (!options_.header.empty()) {
+    if (!options_->header.empty()) {
       struct curl_slist *headers = nullptr;
-      for (const auto& header : options_.header) {
+      for (const auto& header : options_->header) {
           headers = curl_slist_append(headers, header.c_str());
       }
       curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
@@ -84,9 +84,9 @@ void IoServiceImpl::AddCustomHeader(void *handle) const {
 }
 
 void IoServiceImpl::SetAuthentication(void *handle) const {
-    if (options_.ssl_cert && options_.ssl_key) {
-        curl_easy_setopt(handle, CURLOPT_SSLCERT, options_.ssl_cert);
-        curl_easy_setopt(handle, CURLOPT_SSLKEY, options_.ssl_key);
+    if (options_->ssl_cert && options_->ssl_key) {
+        curl_easy_setopt(handle, CURLOPT_SSLCERT, options_->ssl_cert);
+        curl_easy_setopt(handle, CURLOPT_SSLKEY, options_->ssl_key);
     }
 }
 
@@ -100,6 +100,7 @@ Status IoServiceImpl::DoDNGet(
 
   AddCustomHeader(handle);
   SetAuthentication(handle);
+  options_->request_tracker.get_count++;
 
   curl_easy_setopt(handle, CURLOPT_URL, uri_str.c_str());
   curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, error_buffer);
@@ -164,6 +165,9 @@ Status IoServiceImpl::DoPutCreate(const URIBuilder &uri, const char* data, size_
 
   SetAuthentication(handle);
   AddCustomHeader(handle);
+
+  options_->request_tracker.put_count++;
+
   curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "PUT");
   curl_easy_setopt(handle, CURLOPT_URL, uri_str.c_str());
   curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, error_buffer);
