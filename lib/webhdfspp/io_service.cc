@@ -180,7 +180,7 @@ Status IoServiceImpl::DoPutCreate(const URIBuilder &uri, const char* data, size_
 
   struct DataUpload data_upload;
   data_upload.read_pointer = data;
-  data_upload.size_left = strlen(data);
+  data_upload.size_left = length;
 
   CURL* redirect_handle = curl_easy_init();
   char error_buffer_redirect[CURL_ERROR_SIZE];
